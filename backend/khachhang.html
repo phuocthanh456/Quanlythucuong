@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Khách Hàng</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      padding: 0;
+      margin: 0;
+      background-color: #FFFFFF;
+      display: flex;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: #003087;
+      padding: 20px 0;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar .nav-links a {
+      color: #FFFFFF !important;
+      display: block;
+      padding: 10px 20px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .sidebar .nav-links a:hover {
+      background-color: #FFD700;
+      color: #003087;
+      text-decoration: none;
+    }
+    .sidebar .nav-links a i {
+      margin-right: 8px;
+    }
+    .sidebar .logout-btn {
+      color: #FFFFFF !important;
+      display: block;
+      padding: 10px 20px;
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: 20px;
+    }
+    .sidebar .logout-btn:hover {
+      background-color: #FFD700;
+      color: #003087;
+      text-decoration: none;
+    }
+    .sidebar .logout-btn i {
+      margin-right: 8px;
+    }
+    .container {
+      margin-left: 270px;
+      padding: 20px;
+      flex-grow: 1;
+    }
+    .search-bar {
+      max-width: 300px;
+      margin-bottom: 20px;
+    }
+    .error-message {
+      color: #D32F2F;
+      margin-top: 10px;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .pagination button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      border: 1px solid #003087;
+      background-color: #FFFFFF;
+      color: #003087;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .pagination button:disabled {
+      background-color: #E0E0E0;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .pagination button:hover:not(:disabled) {
+      background-color: #003087;
+      color: #FFFFFF;
+    }
+    .pagination span {
+      margin: 0 10px;
+      line-height: 32px;
+    }
+    .modal-content {
+      background-color: #F9F9F9;
+    }
+    .modal-header {
+      background-color: #003087;
+      color: #FFFFFF;
+    }
+    .modal-footer {
+      background-color: #F9F9F9;
+    }
+  </style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="nav-links">
+    <a href="thucuong.html"><i class="fas fa-coffee"></i>Quản Lý Thức Uống</a>
+    <a href="khachhang.html"><i class="fas fa-users"></i>Quản Lý Khách Hàng</a>
+    <a href="loaithucuong.html"><i class="fas fa-tags"></i>Quản Lý Loại Thức Uống</a>
+    <a href="nhacungcap.html"><i class="fas fa-truck"></i>Quản Lý Nhà Cung Cấp</a>
+    <a href="hoadon.html"><i class="fas fa-file-invoice"></i>Quản Lý Hóa Đơn</a>
+  </div>
+  <a class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Đăng Xuất</a>
+</div>
+
+<div class="container">
+  <h1 style="color: #003087;">Quản Lý Khách Hàng</h1>
+  <div class="mb-3 search-bar">
+    <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm theo tên khách hàng..." onkeyup="searchKhachHang()">
+  </div>
+  <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#khachHangModal" onclick="openAddModal()">Thêm Khách Hàng</button>
+  <div id="errorMessage" class="error-message"></div>
+  <table class="table table-bordered">
+    <thead>
+    <tr>
+      <th>ID</th>
+      <th>Họ và Tên</th>
+      <th>Số Điện Thoại</th>
+      <th>Email</th>
+      <th>Địa Chỉ</th>
+      <th>Ngày Sinh</th>
+      <th>Thao Tác</th>
+    </tr>
+    </thead>
+    <tbody id="khachHangTableBody"></tbody>
+  </table>
+  <div class="pagination" id="pagination">
+    <button onclick="previousPage()" id="prevBtn">Previous</button>
+    <span id="pageInfo"></span>
+    <button onclick="nextPage()" id="nextBtn">Next</button>
+  </div>
+</div>
+
+<!-- Modal thêm/sửa khách hàng -->
+<div class="modal fade" id="khachHangModal" tabindex="-1" aria-labelledby="khachHangModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="khachHangModalLabel">Thêm Khách Hàng</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="khachHangForm">
+          <input type="hidden" id="khachHangId">
+          <div class="mb-3">
+            <label for="hoVaTen" class="form-label">Họ và Tên</label>
+            <input type="text" class="form-control" id="hoVaTen" required>
+          </div>
+          <div class="mb-3">
+            <label for="sdt" class="form-label">Số Điện Thoại</label>
+            <input type="text" class="form-control" id="sdt" required>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" required>
+          </div>
+          <div class="mb-3">
+            <label for="diaChi" class="form-label">Địa Chỉ</label>
+            <input type="text" class="form-control" id="diaChi" required>
+          </div>
+          <div class="mb-3">
+            <label for="ngaySinh" class="form-label">Ngày Sinh</label>
+            <input type="date" class="form-control" id="ngaySinh" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary" onclick="saveKhachHang()">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  let khachHangList = [];
+  let filteredKhachHangList = [];
+  let currentPage = 1;
+  const itemsPerPage = 8;
+
+  // Hiển thị thông báo lỗi
+  function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+  }
+
+  // Xóa thông báo lỗi
+  function clearError() {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = '';
+  }
+
+  // Hàm hiển thị danh sách khách hàng với phân trang
+  function displayKhachHang(data) {
+      const tbody = document.getElementById('khachHangTableBody');
+      tbody.innerHTML = '';
+      if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center">Không có dữ liệu</td></tr>';
+          return;
+      }
+
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedData = data.slice(start, end);
+
+      paginatedData.forEach(kh => {
+          const idCustomer = kh.idCustomer || 'N/A';
+          const hoVaTen = kh.hoVaTen || 'N/A';
+          const sdt = kh.sdt || 'N/A';
+          const email = kh.email || 'N/A';
+          const diaChi = kh.diaChi || 'N/A';
+          const ngaySinh = kh.ngaySinh || 'N/A';
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+              <td>${idCustomer}</td>
+              <td>${hoVaTen}</td>
+              <td>${sdt}</td>
+              <td>${email}</td>
+              <td>${diaChi}</td>
+              <td>${ngaySinh}</td>
+              <td>
+                  <button class="btn btn-warning btn-sm" onclick="openEditModal(${idCustomer})">Sửa</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteKhachHang(${idCustomer})">Xóa</button>
+              </td>
+          `;
+          tbody.appendChild(row);
+      });
+
+      updatePagination(data.length);
+  }
+
+  // Cập nhật phân trang
+  function updatePagination(totalItems) {
+      const totalPages = Math.ceil(totalItems / itemsPerPage);
+      document.getElementById('pageInfo').textContent = `Trang ${currentPage} / ${totalPages}`;
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = currentPage === totalPages;
+  }
+
+  // Chuyển đến trang trước
+  function previousPage() {
+      if (currentPage > 1) {
+          currentPage--;
+          displayKhachHang(filteredKhachHangList);
+      }
+  }
+
+  // Chuyển đến trang sau
+  function nextPage() {
+      const totalPages = Math.ceil(filteredKhachHangList.length / itemsPerPage);
+      if (currentPage < totalPages) {
+          currentPage++;
+          displayKhachHang(filteredKhachHangList);
+      }
+  }
+
+  // Tìm kiếm khách hàng
+  function searchKhachHang() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      filteredKhachHangList = khachHangList.filter(kh =>
+          kh.hoVaTen.toLowerCase().includes(searchTerm)
+      );
+      currentPage = 1; // Reset về trang đầu khi tìm kiếm
+      displayKhachHang(filteredKhachHangList);
+  }
+
+  async function loadKhachHang() {
+      try {
+          console.log('Bắt đầu tải danh sách khách hàng...');
+          const response = await fetch('http://localhost:8080/api/khachhang');
+          if (!response.ok) {
+              throw new Error('Không thể tải danh sách khách hàng: ' + response.statusText);
+          }
+          const data = await response.json();
+          console.log('Danh sách khách hàng:', data);
+          khachHangList = data;
+          filteredKhachHangList = [...khachHangList];
+          displayKhachHang(filteredKhachHangList);
+      } catch (error) {
+          console.error('Lỗi tải khách hàng:', error.message);
+          showError('Không thể tải danh sách khách hàng. Vui lòng kiểm tra backend.');
+      }
+  }
+
+  // Mở modal để thêm khách hàng
+  function openAddModal() {
+      document.getElementById('khachHangModalLabel').textContent = 'Thêm Khách Hàng';
+      document.getElementById('khachHangForm').reset();
+      document.getElementById('khachHangId').value = '';
+  }
+
+  // Mở modal để sửa khách hàng
+  async function openEditModal(id) {
+      try {
+          console.log('Lấy thông tin khách hàng với id:', id);
+          const response = await fetch(`http://localhost:8080/api/khachhang/${id}`);
+          if (!response.ok) {
+              throw new Error('Không thể lấy thông tin khách hàng: ' + response.statusText);
+          }
+          const kh = await response.json();
+          console.log('Thông tin khách hàng:', kh);
+          document.getElementById('khachHangModalLabel').textContent = 'Sửa Khách Hàng';
+          document.getElementById('khachHangId').value = kh.idCustomer || '';
+          document.getElementById('hoVaTen').value = kh.hoVaTen || '';
+          document.getElementById('sdt').value = kh.sdt || '';
+          document.getElementById('email').value = kh.email || '';
+          document.getElementById('diaChi').value = kh.diaChi || '';
+          document.getElementById('ngaySinh').value = kh.ngaySinh || '';
+          const modal = new bootstrap.Modal(document.getElementById('khachHangModal'));
+          modal.show();
+      } catch (error) {
+          console.error('Lỗi:', error.message);
+          showError('Không thể lấy thông tin khách hàng để sửa. Vui lòng thử lại.');
+      }
+  }
+
+  // Lưu khách hàng (thêm hoặc sửa)
+  async function saveKhachHang() {
+      const form = document.getElementById('khachHangForm');
+      if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+      }
+
+      const id = document.getElementById('khachHangId').value;
+      const khachHang = {
+          hoVaTen: document.getElementById('hoVaTen').value,
+          sdt: document.getElementById('sdt').value,
+          email: document.getElementById('email').value,
+          diaChi: document.getElementById('diaChi').value,
+          ngaySinh: document.getElementById('ngaySinh').value
+      };
+
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `http://localhost:8080/api/khachhang/${id}` : 'http://localhost:8080/api/khachhang';
+
+      try {
+          console.log('Lưu khách hàng:', khachHang);
+          const response = await fetch(url, {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(khachHang)
+          });
+          if (!response.ok) {
+              throw new Error('Lỗi khi lưu khách hàng: ' + response.statusText);
+          }
+          const modal = bootstrap.Modal.getInstance(document.getElementById('khachHangModal'));
+          modal.hide();
+          clearError();
+          await loadKhachHang();
+      } catch (error) {
+          console.error('Lỗi:', error.message);
+          showError('Lỗi khi lưu khách hàng. Vui lòng thử lại.');
+      }
+  }
+
+  // Xóa khách hàng
+  async function deleteKhachHang(id) {
+      if (confirm('Bạn có chắc chắn muốn xóa khách hàng này?')) {
+          try {
+              console.log('Xóa khách hàng với id:', id);
+              const response = await fetch(`http://localhost:8080/api/khachhang/${id}`, {
+                  method: 'DELETE'
+              });
+              if (!response.ok) {
+                  throw new Error('Lỗi khi xóa khách hàng: ' + response.statusText);
+              }
+              clearError();
+              await loadKhachHang();
+          } catch (error) {
+              console.error('Lỗi:', error.message);
+              showError('Lỗi khi xóa khách hàng. Vui lòng thử lại.');
+          }
+      }
+  }
+
+  // Hàm đăng xuất
+  function logout() {
+      if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+          localStorage.removeItem('taiKhoan');
+          window.location.href = 'login.html';
+      }
+  }
+
+  // Tải dữ liệu khi trang được mở
+  window.onload = async function() {
+      const taiKhoan = localStorage.getItem('taiKhoan');
+      if (!taiKhoan) {
+          console.log('Không tìm thấy thông tin tài khoản, chuyển hướng về login.html');
+          window.location.href = 'login.html';
+          return;
+      }
+
+      const parsedTaiKhoan = JSON.parse(taiKhoan);
+      if (parsedTaiKhoan.role !== 'ADMIN') {
+          console.log('Role không phải ADMIN, xóa localStorage và chuyển hướng');
+          localStorage.removeItem('taiKhoan');
+          window.location.href = 'login.html';
+          return;
+      }
+
+      console.log('Trang bắt đầu tải...');
+      await loadKhachHang();
+      console.log('Tải dữ liệu hoàn tất.');
+  };
+</script>
+</body>
+</html>

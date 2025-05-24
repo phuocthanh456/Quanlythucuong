@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Hóa Đơn</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      padding: 0;
+      margin: 0;
+      background-color: #FFFFFF;
+      display: flex;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: #003087;
+      padding: 20px 0;
+      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar .nav-links a {
+      color: #FFFFFF !important;
+      display: block;
+      padding: 10px 20px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .sidebar .nav-links a:hover {
+      background-color: #FFD700;
+      color: #003087;
+      text-decoration: none;
+    }
+    .sidebar .nav-links a i {
+      margin-right: 8px;
+    }
+    .sidebar .logout-btn {
+      color: #FFFFFF !important;
+      display: block;
+      padding: 10px 20px;
+      text-decoration: none;
+      font-weight: 500;
+      margin-top: 20px;
+    }
+    .sidebar .logout-btn:hover {
+      background-color: #FFD700;
+      color: #003087;
+      text-decoration: none;
+    }
+    .sidebar .logout-btn i {
+      margin-right: 8px;
+    }
+    .container {
+      margin-left: 270px;
+      padding: 20px;
+      flex-grow: 1;
+    }
+    .error-message {
+      color: #D32F2F;
+      margin-top: 10px;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .pagination button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      border: 1px solid #003087;
+      background-color: #FFFFFF;
+      color: #003087;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .pagination button:disabled {
+      background-color: #E0E0E0;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .pagination button:hover:not(:disabled) {
+      background-color: #003087;
+      color: #FFFFFF;
+    }
+    .pagination span {
+      margin: 0 10px;
+      line-height: 32px;
+    }
+    .modal-content {
+      background-color: #F9F9F9;
+    }
+    .modal-header {
+      background-color: #003087;
+      color: #FFFFFF;
+    }
+    .modal-footer {
+      background-color: #F9F9F9;
+    }
+    .stats-section {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #F9F9F9;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="nav-links">
+    <a href="thucuong.html"><i class="fas fa-coffee"></i>Quản Lý Thức Uống</a>
+    <a href="khachhang.html"><i class="fas fa-users"></i>Quản Lý Khách Hàng</a>
+    <a href="loaithucuong.html"><i class="fas fa-tags"></i>Quản Lý Loại Thức Uống</a>
+    <a href="nhacungcap.html"><i class="fas fa-truck"></i>Quản Lý Nhà Cung Cấp</a>
+    <a href="hoadon.html"><i class="fas fa-file-invoice"></i>Quản Lý Hóa Đơn</a>
+  </div>
+  <a class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i>Đăng Xuất</a>
+</div>
+
+<div class="container">
+  <!-- Danh sách hóa đơn -->
+  <h1 style="color: #003087;">Quản Lý Hóa Đơn</h1>
+  <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#hoaDonModal" onclick="openAddHoaDonModal()">Thêm Hóa Đơn</button>
+  <div id="errorMessage" class="error-message"></div>
+  <table class="table table-bordered">
+    <thead>
+    <tr>
+      <th>ID Hóa Đơn</th>
+      <th>Tên Khách Hàng</th>
+      <th>Ngày Lập</th>
+      <th>Tổng Tiền</th>
+      <th>Thao Tác</th>
+    </tr>
+    </thead>
+    <tbody id="hoaDonTableBody"></tbody>
+  </table>
+  <div class="pagination" id="hoaDonPagination">
+    <button onclick="previousHoaDonPage()" id="hoaDonPrevBtn">Previous</button>
+    <span id="hoaDonPageInfo"></span>
+    <button onclick="nextHoaDonPage()" id="hoaDonNextBtn">Next</button>
+  </div>
+
+  <!-- Danh sách chi tiết hóa đơn -->
+  <div id="chiTietHoaDonSection" style="display: none;">
+    <h3 style="color: #003087;">Chi Tiết Hóa Đơn <span id="chiTietHoaDonTitle"></span></h3>
+    <button class="btn btn-primary mb-3" onclick="openAddChiTietModal()">Thêm Chi Tiết</button>
+    <button class="btn btn-success mb-3" onclick="exportHoaDonToText()">Xuất Hóa Đơn ra File Text</button>
+    <table class="table table-bordered">
+      <thead>
+      <tr>
+        <th>Tên Sản Phẩm</th>
+        <th>Số Lượng</th>
+        <th>Đơn Giá</th>
+        <th>Thành Tiền</th>
+        <th>Thao Tác</th>
+      </tr>
+      </thead>
+      <tbody id="chiTietHoaDonTableBody"></tbody>
+    </table>
+    <div class="pagination" id="chiTietPagination">
+      <button onclick="previousChiTietPage()" id="chiTietPrevBtn">Previous</button>
+      <span id="chiTietPageInfo"></span>
+      <button onclick="nextChiTietPage()" id="chiTietNextBtn">Next</button>
+    </div>
+  </div>
+
+  <!-- Phần thống kê -->
+  <div class="stats-section">
+    <h3 style="color: #003087;">Thống Kê Doanh Thu</h3>
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label for="statsType" class="form-label">Loại Thống Kê</label>
+        <select id="statsType" class="form-control">
+          <option value="day">Theo Ngày</option>
+          <option value="month">Theo Tháng</option>
+          <option value="year">Theo Năm</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="startDate" class="form-label">Từ Ngày</label>
+        <input type="date" id="startDate" class="form-control" value="2025-01-01">
+      </div>
+      <div class="col-md-3">
+        <label for="endDate" class="form-label">Đến Ngày</label>
+        <input type="date" id="endDate" class="form-control" value="2025-12-31">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label d-block"> </label>
+        <button class="btn btn-primary" onclick="loadThongKe()">Thống Kê</button>
+        <button class="btn btn-success" onclick="exportThongKeToCSV()">Xuất Excel</button>
+      </div>
+    </div>
+    <table class="table table-bordered">
+      <thead>
+      <tr>
+        <th>Thời Gian</th>
+        <th>Doanh Thu (VNĐ)</th>
+      </tr>
+      </thead>
+      <tbody id="thongKeTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal thêm/sửa hóa đơn -->
+<div class="modal fade" id="hoaDonModal" tabindex="-1" aria-labelledby="hoaDonModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="hoaDonModalLabel">Thêm Hóa Đơn</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="hoaDonForm">
+          <input type="hidden" id="hoaDonId">
+          <div class="mb-3">
+            <label for="idCustomer" class="form-label">Tên Khách Hàng</label>
+            <select class="form-control" id="idCustomer" required>
+              <option value="">Chọn khách hàng</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="ngayLap" class="form-label">Ngày Lập</label>
+            <input type="date" class="form-control" id="ngayLap" required>
+          </div>
+          <div class="mb-3">
+            <label for="tongTien" class="form-label">Tổng Tiền</label>
+            <input type="number" class="form-control" id="tongTien" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary" onclick="saveHoaDon()">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal thêm/sửa chi tiết hóa đơn -->
+<div class="modal fade" id="chiTietHoaDonModal" tabindex="-1" aria-labelledby="chiTietHoaDonModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="chiTietHoaDonModalLabel">Thêm Chi Tiết Hóa Đơn</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="chiTietHoaDonForm">
+          <input type="hidden" id="chiTietIdInvoice">
+          <input type="hidden" id="chiTietIdProduct">
+          <div class="mb-3">
+            <label for="idProduct" class="form-label">Tên Sản Phẩm</label>
+            <select class="form-control" id="idProduct" required>
+              <option value="">Chọn sản phẩm</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="soLuong" class="form-label">Số Lượng</label>
+            <input type="number" class="form-control" id="soLuong" required>
+          </div>
+          <div class="mb-3">
+            <label for="donGia" class="form-label">Đơn Giá</label>
+            <input type="number" step="0.01" class="form-control" id="donGia" required readonly>
+          </div>
+          <div class="mb-3">
+            <label for="thanhTien" class="form-label">Thành Tiền</label>
+            <input type="number" step="0.01" class="form-control" id="thanhTien" required readonly>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary" onclick="saveChiTietHoaDon()">Lưu</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  let hoaDonList = [];
+  let chiTietHoaDonList = [];
+  let khachHangList = [];
+  let sanPhamList = [];
+  let currentHoaDonPage = 1;
+  let currentChiTietPage = 1;
+  let selectedHoaDonId = null;
+  const itemsPerPage = 8;
+
+  // Hiển thị thông báo lỗi
+  function showError(message) {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = message;
+  }
+
+  // Xóa thông báo lỗi
+  function clearError() {
+    const errorDiv = document.getElementById('errorMessage');
+    errorDiv.textContent = '';
+  }
+
+  // Tải danh sách khách hàng
+  async function loadKhachHang() {
+    try {
+      const response = await fetch('http://localhost:8080/api/khachhang');
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách khách hàng: ' + response.statusText);
+      }
+      khachHangList = await response.json();
+      populateKhachHangDropdown();
+    } catch (error) {
+      console.error('Lỗi tải khách hàng:', error.message);
+      showError('Không thể tải danh sách khách hàng. Vui lòng kiểm tra backend.');
+    }
+  }
+
+  // Tải danh sách sản phẩm
+  async function loadSanPham() {
+    try {
+      const response = await fetch('http://localhost:8080/api/thucuong');
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách sản phẩm: ' + response.statusText);
+      }
+      sanPhamList = await response.json();
+      console.log('Danh sách sản phẩm:', sanPhamList);
+      populateSanPhamDropdown();
+    } catch (error) {
+      console.error('Lỗi tải sản phẩm:', error.message);
+      showError('Không thể tải danh sách sản phẩm. Vui lòng kiểm tra backend.');
+    }
+  }
+
+  // Điền danh sách khách hàng vào dropdown
+  function populateKhachHangDropdown() {
+    const select = document.getElementById('idCustomer');
+    select.innerHTML = '<option value="">Chọn khách hàng</option>';
+    khachHangList.forEach(kh => {
+      const option = document.createElement('option');
+      option.value = kh.idCustomer;
+      option.textContent = kh.hoVaTen;
+      select.appendChild(option);
+    });
+  }
+
+  // Điền danh sách sản phẩm vào dropdown với sự kiện onchange
+  function populateSanPhamDropdown() {
+    const select = document.getElementById('idProduct');
+    select.innerHTML = '<option value="">Chọn sản phẩm</option>';
+    sanPhamList.forEach(sp => {
+      const option = document.createElement('option');
+      option.value = sp.idProduct;
+      option.textContent = sp.ten;
+      select.appendChild(option);
+    });
+    // Thêm sự kiện onchange để tự động điền Đơn Giá
+    select.onchange = function() {
+      const selectedProduct = sanPhamList.find(sp => sp.idProduct == this.value);
+      if (selectedProduct) {
+        document.getElementById('donGia').value = selectedProduct.donGia || 0;
+        calculateThanhTien(); // Tính lại Thành Tiền khi chọn sản phẩm
+      } else {
+        document.getElementById('donGia').value = '';
+        document.getElementById('thanhTien').value = '';
+      }
+    };
+  }
+
+  // Hàm tính Thành Tiền
+  function calculateThanhTien() {
+    const soLuong = parseInt(document.getElementById('soLuong').value) || 0;
+    const donGia = parseFloat(document.getElementById('donGia').value) || 0;
+    const thanhTien = soLuong * donGia;
+    document.getElementById('thanhTien').value = thanhTien.toFixed(2);
+  }
+
+  // Thêm sự kiện input cho Số Lượng
+  document.getElementById('soLuong').oninput = function() {
+    calculateThanhTien();
+  };
+
+  // Hiển thị danh sách hóa đơn với phân trang
+  async function displayHoaDon(data) {
+    const tbody = document.getElementById('hoaDonTableBody');
+    tbody.innerHTML = '';
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center">Không có dữ liệu</td></tr>';
+      return;
+    }
+
+    const start = (currentHoaDonPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedData = data.slice(start, end);
+
+    for (const hd of paginatedData) {
+      const khachHang = khachHangList.find(kh => kh.idCustomer === hd.idCustomer);
+      const tenKhachHang = khachHang ? khachHang.hoVaTen : 'N/A';
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${hd.idInvoice || 'N/A'}</td>
+        <td>${tenKhachHang}</td>
+        <td>${hd.ngayLap || 'N/A'}</td>
+        <td>${hd.tongTien ? hd.tongTien.toLocaleString('vi-VN') : 'N/A'}</td>
+        <td>
+          <button class="btn btn-info btn-sm" onclick="viewChiTietHoaDon(${hd.idInvoice})">Xem Chi Tiết</button>
+          <button class="btn btn-warning btn-sm" onclick="openEditHoaDonModal(${hd.idInvoice})">Sửa</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteHoaDon(${hd.idInvoice})">Xóa</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    updateHoaDonPagination(data.length);
+  }
+
+  // Cập nhật phân trang hóa đơn
+  function updateHoaDonPagination(totalItems) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    document.getElementById('hoaDonPageInfo').textContent = `Trang ${currentHoaDonPage} / ${totalPages}`;
+    document.getElementById('hoaDonPrevBtn').disabled = currentHoaDonPage === 1;
+    document.getElementById('hoaDonNextBtn').disabled = currentHoaDonPage === totalPages;
+  }
+
+  // Chuyển trang hóa đơn
+  function previousHoaDonPage() {
+    if (currentHoaDonPage > 1) {
+      currentHoaDonPage--;
+      displayHoaDon(hoaDonList);
+    }
+  }
+
+  function nextHoaDonPage() {
+    const totalPages = Math.ceil(hoaDonList.length / itemsPerPage);
+    if (currentHoaDonPage < totalPages) {
+      currentHoaDonPage++;
+      displayHoaDon(hoaDonList);
+    }
+  }
+
+  // Hiển thị danh sách chi tiết hóa đơn với phân trang
+  async function displayChiTietHoaDon(data) {
+    const tbody = document.getElementById('chiTietHoaDonTableBody');
+    tbody.innerHTML = '';
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center">Không có dữ liệu</td></tr>';
+      return;
+    }
+
+    const start = (currentChiTietPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const paginatedData = data.slice(start, end);
+
+    for (const ct of paginatedData) {
+      const sanPham = sanPhamList.find(sp => sp.idProduct === ct.idProduct);
+      const tenSanPham = sanPham ? sanPham.ten : 'Không tìm thấy sản phẩm';
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${tenSanPham}</td>
+        <td>${ct.soLuong || 'N/A'}</td>
+        <td>${ct.donGia ? ct.donGia.toLocaleString('vi-VN') : 'N/A'}</td>
+        <td>${ct.thanhTien ? ct.thanhTien.toLocaleString('vi-VN') : 'N/A'}</td>
+        <td>
+          <button class="btn btn-warning btn-sm" onclick="openEditChiTietModal(${ct.idProduct}, ${ct.idInvoice})">Sửa</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteChiTietHoaDon(${ct.idProduct}, ${ct.idInvoice})">Xóa</button>
+        </td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    updateChiTietPagination(data.length);
+  }
+
+  // Cập nhật phân trang chi tiết hóa đơn
+  function updateChiTietPagination(totalItems) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    document.getElementById('chiTietPageInfo').textContent = `Trang ${currentChiTietPage} / ${totalPages}`;
+    document.getElementById('chiTietPrevBtn').disabled = currentChiTietPage === 1;
+    document.getElementById('chiTietNextBtn').disabled = currentChiTietPage === totalPages;
+  }
+
+  // Chuyển trang chi tiết hóa đơn
+  function previousChiTietPage() {
+    if (currentChiTietPage > 1) {
+      currentChiTietPage--;
+      displayChiTietHoaDon(chiTietHoaDonList);
+    }
+  }
+
+  function nextChiTietPage() {
+    const totalPages = Math.ceil(chiTietHoaDonList.length / itemsPerPage);
+    if (currentChiTietPage < totalPages) {
+      currentChiTietPage++;
+      displayChiTietHoaDon(chiTietHoaDonList);
+    }
+  }
+
+  // Tải danh sách hóa đơn
+  async function loadHoaDon() {
+    try {
+      const response = await fetch('http://localhost:8080/api/hoadon');
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách hóa đơn: ' + response.statusText);
+      }
+      const data = await response.json();
+      hoaDonList = data;
+      await loadKhachHang();
+      await loadSanPham();
+      displayHoaDon(hoaDonList);
+    } catch (error) {
+      console.error('Lỗi tải hóa đơn:', error.message);
+      showError('Không thể tải danh sách hóa đơn. Vui lòng kiểm tra backend.');
+    }
+  }
+
+  // Xem chi tiết hóa đơn
+  async function viewChiTietHoaDon(idInvoice) {
+    selectedHoaDonId = idInvoice;
+    document.getElementById('chiTietHoaDonTitle').textContent = `ID: ${idInvoice}`;
+    document.getElementById('chiTietHoaDonSection').style.display = 'block';
+
+    try {
+      const response = await fetch('http://localhost:8080/api/chitiethoadon');
+      if (!response.ok) {
+        throw new Error('Không thể tải chi tiết hóa đơn: ' + response.statusText);
+      }
+      const data = await response.json();
+      chiTietHoaDonList = data.filter(ct => ct.idInvoice === idInvoice);
+      console.log('Chi tiết hóa đơn:', chiTietHoaDonList);
+      currentChiTietPage = 1;
+      displayChiTietHoaDon(chiTietHoaDonList);
+    } catch (error) {
+      console.error('Lỗi tải chi tiết hóa đơn:', error.message);
+      showError('Không thể tải chi tiết hóa đơn. Vui lòng thử lại.');
+    }
+  }
+
+  // Mở modal thêm hóa đơn
+  function openAddHoaDonModal() {
+    document.getElementById('hoaDonModalLabel').textContent = 'Thêm Hóa Đơn';
+    document.getElementById('hoaDonForm').reset();
+    document.getElementById('hoaDonId').value = '';
+    const ngayLap = new Date().toISOString().split('T')[0];
+    document.getElementById('ngayLap').value = ngayLap;
+  }
+
+  // Mở modal sửa hóa đơn
+  async function openEditHoaDonModal(id) {
+    try {
+      const response = await fetch(`http://localhost:8080/api/hoadon/${id}`);
+      if (!response.ok) {
+        throw new Error('Không thể lấy thông tin hóa đơn: ' + response.statusText);
+      }
+      const hoaDon = await response.json();
+      document.getElementById('hoaDonModalLabel').textContent = 'Sửa Hóa Đơn';
+      document.getElementById('hoaDonId').value = hoaDon.idInvoice;
+      document.getElementById('idCustomer').value = hoaDon.idCustomer || '';
+      document.getElementById('ngayLap').value = hoaDon.ngayLap || '';
+      document.getElementById('tongTien').value = hoaDon.tongTien || '';
+      const modal = new bootstrap.Modal(document.getElementById('hoaDonModal'));
+      modal.show();
+    } catch (error) {
+      console.error('Lỗi:', error.message);
+      showError('Không thể lấy thông tin hóa đơn để sửa. Vui lòng thử lại.');
+    }
+  }
+
+  // Lưu hóa đơn (thêm hoặc sửa)
+  async function saveHoaDon() {
+    const form = document.getElementById('hoaDonForm');
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const id = document.getElementById('hoaDonId').value;
+    const hoaDon = {
+      idCustomer: document.getElementById('idCustomer').value,
+      ngayLap: document.getElementById('ngayLap').value,
+      tongTien: parseFloat(document.getElementById('tongTien').value)
+    };
+
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `http://localhost:8080/api/hoadon/${id}` : 'http://localhost:8080/api/hoadon';
+
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(hoaDon)
+      });
+      if (!response.ok) {
+        throw new Error('Lỗi khi lưu hóa đơn: ' + response.statusText);
+      }
+      const modal = bootstrap.Modal.getInstance(document.getElementById('hoaDonModal'));
+      modal.hide();
+      clearError();
+      await loadHoaDon();
+    } catch (error) {
+      console.error('Lỗi:', error.message);
+      showError('Lỗi khi lưu hóa đơn. Vui lòng thử lại.');
+    }
+  }
+
+  // Xóa hóa đơn
+  async function deleteHoaDon(id) {
+    if (confirm('Bạn có chắc chắn muốn xóa hóa đơn này?')) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/hoadon/${id}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok) {
+          throw new Error('Lỗi khi xóa hóa đơn: ' + response.statusText);
+        }
+        clearError();
+        await loadHoaDon();
+        document.getElementById('chiTietHoaDonSection').style.display = 'none';
+      } catch (error) {
+        console.error('Lỗi:', error.message);
+        showError('Lỗi khi xóa hóa đơn. Vui lòng thử lại.');
+      }
+    }
+  }
+
+  // Mở modal thêm chi tiết hóa đơn
+  function openAddChiTietModal() {
+    if (!selectedHoaDonId) {
+      showError('Vui lòng chọn hóa đơn để thêm chi tiết.');
+      return;
+    }
+    document.getElementById('chiTietHoaDonModalLabel').textContent = 'Thêm Chi Tiết Hóa Đơn';
+    document.getElementById('chiTietHoaDonForm').reset();
+    document.getElementById('chiTietIdInvoice').value = selectedHoaDonId;
+    document.getElementById('chiTietIdProduct').value = '';
+    document.getElementById('donGia').value = '';
+    document.getElementById('thanhTien').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('chiTietHoaDonModal'));
+    modal.show();
+  }
+
+  // Mở modal sửa chi tiết hóa đơn
+  async function openEditChiTietModal(idProduct, idInvoice) {
+    try {
+      const response = await fetch(`http://localhost:8080/api/chitiethoadon/${idInvoice}/${idProduct}`);
+      if (!response.ok) {
+        throw new Error('Không thể lấy thông tin chi tiết hóa đơn: ' + response.statusText);
+      }
+      const chiTiet = await response.json();
+      document.getElementById('chiTietHoaDonModalLabel').textContent = 'Sửa Chi Tiết Hóa Đơn';
+      document.getElementById('chiTietIdInvoice').value = chiTiet.idInvoice;
+      document.getElementById('chiTietIdProduct').value = chiTiet.idProduct;
+      document.getElementById('idProduct').value = chiTiet.idProduct || '';
+      document.getElementById('soLuong').value = chiTiet.soLuong || '';
+      document.getElementById('donGia').value = chiTiet.donGia || '';
+      document.getElementById('thanhTien').value = chiTiet.thanhTien || '';
+      const modal = new bootstrap.Modal(document.getElementById('chiTietHoaDonModal'));
+      modal.show();
+    } catch (error) {
+      console.error('Lỗi:', error.message);
+      showError('Không thể lấy thông tin chi tiết hóa đơn để sửa. Vui lòng thử lại.');
+    }
+  }
+
+  // Lưu chi tiết hóa đơn (thêm hoặc sửa)
+  async function saveChiTietHoaDon() {
+    const form = document.getElementById('chiTietHoaDonForm');
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const idInvoice = document.getElementById('chiTietIdInvoice').value;
+    const idProduct = document.getElementById('chiTietIdProduct').value;
+    const chiTiet = {
+      idInvoice: idInvoice,
+      idProduct: document.getElementById('idProduct').value,
+      soLuong: parseInt(document.getElementById('soLuong').value),
+      donGia: parseFloat(document.getElementById('donGia').value),
+      thanhTien: parseFloat(document.getElementById('thanhTien').value)
+    };
+
+    const method = idProduct ? 'PUT' : 'POST';
+    const url = idProduct ? `http://localhost:8080/api/chitiethoadon/${idInvoice}/${idProduct}` : 'http://localhost:8080/api/chitiethoadon';
+
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(chiTiet)
+      });
+      if (!response.ok) {
+        throw new Error('Lỗi khi lưu chi tiết hóa đơn: ' + response.statusText);
+      }
+      const modal = bootstrap.Modal.getInstance(document.getElementById('chiTietHoaDonModal'));
+      modal.hide();
+      clearError();
+      await viewChiTietHoaDon(idInvoice);
+    } catch (error) {
+      console.error('Lỗi:', error.message);
+      showError('Lỗi khi lưu chi tiết hóa đơn. Vui lòng thử lại.');
+    }
+  }
+
+  // Xóa chi tiết hóa đơn
+  async function deleteChiTietHoaDon(idProduct, idInvoice) {
+    if (confirm('Bạn có chắc chắn muốn xóa chi tiết này?')) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/chitiethoadon/${idInvoice}/${idProduct}`, {
+          method: 'DELETE'
+        });
+        if (!response.ok) {
+          throw new Error('Lỗi khi xóa chi tiết hóa đơn: ' + response.statusText);
+        }
+        clearError();
+        await viewChiTietHoaDon(idInvoice);
+      } catch (error) {
+        console.error('Lỗi:', error.message);
+        showError('Lỗi khi xóa chi tiết hóa đơn. Vui lòng thử lại.');
+      }
+    }
+  }
+
+  // Xuất hóa đơn ra file text
+  function exportHoaDonToText() {
+    if (!selectedHoaDonId || chiTietHoaDonList.length === 0) {
+      showError('Không có chi tiết hóa đơn để xuất.');
+      return;
+    }
+
+    let text = `Hóa Đơn ID: ${selectedHoaDonId}\n\nChi Tiết Hóa Đơn:\n`;
+    chiTietHoaDonList.forEach(ct => {
+      const sanPham = sanPhamList.find(sp => sp.idProduct === ct.idProduct);
+      const tenSanPham = sanPham ? sanPham.ten : 'Không tìm thấy sản phẩm';
+      text += `Sản Phẩm: ${tenSanPham}\n`;
+      text += `Số Lượng: ${ct.soLuong}\n`;
+      text += `Đơn Giá: ${ct.donGia.toLocaleString('vi-VN')} VNĐ\n`;
+      text += `Thành Tiền: ${ct.thanhTien.toLocaleString('vi-VN')} VNĐ\n\n`;
+    });
+
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hoadon_${selectedHoaDonId}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  // Tải thống kê doanh thu
+async function loadThongKe() {
+    const type = document.getElementById('statsType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    try {
+        // Sử dụng startDate và endDate thay vì start và end để khớp với backend
+        const response = await fetch(`http://localhost:8080/api/hoadon/thongke?type=${type}&startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData[0]?.error || 'Không thể tải thống kê: ' + response.statusText);
+        }
+        const data = await response.json();
+        displayThongKe(data);
+    } catch (error) {
+        console.error('Lỗi tải thống kê:', error.message);
+        showError(error.message);
+    }
+}
+
+// Hiển thị thống kê
+function displayThongKe(data) {
+    const tbody = document.getElementById('thongKeTableBody');
+    tbody.innerHTML = '';
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center">Không có dữ liệu</td></tr>';
+        return;
+    }
+
+    data.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.thoiGian || 'N/A'}</td> <!-- Sử dụng thoiGian thay vì time -->
+            <td>${item.doanhThu.toLocaleString('vi-VN')} VNĐ</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Xuất thống kê ra file CSV
+async function exportThongKeToCSV() {
+    const type = document.getElementById('statsType').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    try {
+        // Sử dụng startDate và endDate thay vì start và end để khớp với backend
+        const response = await fetch(`http://localhost:8080/api/hoadon/thongke?type=${type}&startDate=${startDate}&endDate=${endDate}`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData[0]?.error || 'Không thể tải thống kê để xuất: ' + response.statusText);
+        }
+        const data = await response.json();
+
+        let csvContent = 'Thời Gian,Doanh Thu (VNĐ)\n';
+        data.forEach(item => {
+            csvContent += `${item.thoiGian || 'N/A'},${item.doanhThu}\n`; // Sử dụng thoiGian thay vì time
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ThongKeDoanhThu_${type}_${startDate}_to_${endDate}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Lỗi xuất thống kê:', error.message);
+        showError(error.message);
+    }
+}
+
+  // Hàm đăng xuất
+  function logout() {
+    if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+      localStorage.removeItem('taiKhoan');
+      window.location.href = 'login.html';
+    }
+  }
+
+  // Tải dữ liệu khi trang được mở
+  window.onload = async function() {
+    const taiKhoan = localStorage.getItem('taiKhoan');
+    if (!taiKhoan) {
+      console.log('Không tìm thấy thông tin tài khoản, chuyển hướng về login.html');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const parsedTaiKhoan = JSON.parse(taiKhoan);
+    if (parsedTaiKhoan.role !== 'ADMIN') {
+      console.log('Role không phải ADMIN, xóa localStorage và chuyển hướng');
+      localStorage.removeItem('taiKhoan');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    console.log('Trang bắt đầu tải...');
+    await loadHoaDon();
+    console.log('Tải dữ liệu hoàn tất.');
+  };
+</script>
+</body>
+</html>
